@@ -46,17 +46,21 @@ def set_font(run, size_pt: float, bold: bool = False, italic: bool = False, colo
     rPr.insert(0, rFonts)
 
 
-def set_paragraph_spacing(para, before_auto=True, after_auto=True, line_rule="auto"):
-    """Match the template's autospacing."""
+def set_paragraph_spacing(para, before_auto=True, after_auto=True,
+                          line_rule="auto", line="240", after_pt=6):
+    """
+    Paragraph spacing.
+    line="240" = single (1.0), "276" = 1.15, "288" = 1.2
+    after_pt = gap after each paragraph in points (72pt = 1 inch)
+    """
     pPr = para._p.get_or_add_pPr()
     spacing = OxmlElement("w:spacing")
     if before_auto:
         spacing.set(qn("w:beforeAutospacing"), "1")
         spacing.set(qn("w:before"), "100")
-    if after_auto:
-        spacing.set(qn("w:afterAutospacing"), "1")
-        spacing.set(qn("w:after"), "100")
-    spacing.set(qn("w:line"), "240")
+    # Explicit after spacing in twips (1pt = 20 twips)
+    spacing.set(qn("w:after"), str(after_pt * 20))
+    spacing.set(qn("w:line"), line)
     spacing.set(qn("w:lineRule"), line_rule)
     existing = pPr.find(qn("w:spacing"))
     if existing is not None:
@@ -347,7 +351,7 @@ def build_docx(
     # ── Opening hook ─────────────────────────────────────────────────────────
     opening_para = doc.add_paragraph()
     opening_para.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    set_paragraph_spacing(opening_para)
+    set_paragraph_spacing(opening_para, line="276", after_pt=6)
     opening_run = opening_para.add_run(content.get("opening_hook", ""))
     set_font(opening_run, size_pt=11)
 
@@ -357,7 +361,7 @@ def build_docx(
             continue
         body_para = doc.add_paragraph()
         body_para.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-        set_paragraph_spacing(body_para)
+        set_paragraph_spacing(body_para, line="276", after_pt=6)
 
         # Handle inline project references — find bold segments (project names)
         # Convention: if content includes **ProjectName**, make it bold
@@ -374,7 +378,7 @@ def build_docx(
     if bullets:
         # Intro sentence for bullets
         intro_para = doc.add_paragraph()
-        set_paragraph_spacing(intro_para)
+        set_paragraph_spacing(intro_para, line="276", after_pt=4)
         intro_run = intro_para.add_run(
             f"What I'd bring to {company_name}:"
         )
@@ -388,7 +392,7 @@ def build_docx(
     if closing_text:
         closing_para = doc.add_paragraph()
         closing_para.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-        set_paragraph_spacing(closing_para)
+        set_paragraph_spacing(closing_para, line="276", after_pt=6)
         closing_run = closing_para.add_run(closing_text)
         set_font(closing_run, size_pt=11)
 
