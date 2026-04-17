@@ -129,7 +129,9 @@ def run_setup(profile_path: Path, editing: bool = False):
     profile["name"] = ask("Full name", default=existing.get("name", ""))
     profile["email"] = ask("Email", default=existing.get("email", ""))
     profile["phone"] = ask("Phone", default=existing.get("phone", ""))
-    profile["linkedin_url"] = ask("LinkedIn URL", default=existing.get("linkedin_url", ""))
+    profile["linkedin_url"] = ask("LinkedIn URL", default=existing.get("linkedin_url", "https://www.linkedin.com/in/arulprashath01/"))
+    profile["github_url"] = ask("GitHub URL", default=existing.get("github_url", "https://github.com/Aroool"))
+    profile["portfolio_url"] = ask("Portfolio URL (press Enter to skip)", default=existing.get("portfolio_url", "https://arulprashath-portfolio.vercel.app/"), required=False)
     profile["location"] = ask("Location (e.g. Boston, MA)", default=existing.get("location", ""))
 
     # ── Career Summary ─────────────────────────────────────────────────────────

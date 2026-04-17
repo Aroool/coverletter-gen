@@ -280,27 +280,44 @@ def build_docx(
     email = profile.get("email", "")
     phone = profile.get("phone", "")
     linkedin_url = profile.get("linkedin_url", "")
+    github_url = profile.get("github_url", "")
+    portfolio_url = profile.get("portfolio_url", "")
     location = profile.get("location", "")
+
+    def sep(para):
+        r = para.add_run(" | ")
+        set_font(r, size_pt=11, bold=True)
 
     # Email (hyperlink)
     if email:
-        add_hyperlink(contact_para, email, f"mailto:{email}", bold=True, size_pt=12)
+        add_hyperlink(contact_para, email, f"mailto:{email}", bold=True, size_pt=11)
 
     # Phone
     if phone:
-        sep_run = contact_para.add_run(f" | {phone}")
-        set_font(sep_run, size_pt=12, bold=True)
+        sep(contact_para)
+        ph_run = contact_para.add_run(phone)
+        set_font(ph_run, size_pt=11, bold=True)
 
     # LinkedIn (hyperlink)
     if linkedin_url:
-        sep_run2 = contact_para.add_run(" | ")
-        set_font(sep_run2, size_pt=12, bold=True)
-        add_hyperlink(contact_para, "LinkedIn", linkedin_url, bold=True, size_pt=12)
+        sep(contact_para)
+        add_hyperlink(contact_para, "LinkedIn", linkedin_url, bold=True, size_pt=11)
+
+    # GitHub (hyperlink)
+    if github_url:
+        sep(contact_para)
+        add_hyperlink(contact_para, "GitHub", github_url, bold=True, size_pt=11)
+
+    # Portfolio (hyperlink)
+    if portfolio_url:
+        sep(contact_para)
+        add_hyperlink(contact_para, "Portfolio", portfolio_url, bold=True, size_pt=11)
 
     # Location
     if location:
-        loc_run = contact_para.add_run(f" | {location}")
-        set_font(loc_run, size_pt=12, bold=True)
+        sep(contact_para)
+        loc_run = contact_para.add_run(location)
+        set_font(loc_run, size_pt=11, bold=True)
 
     # ── Date ─────────────────────────────────────────────────────────────────
     date_para = doc.add_paragraph()
