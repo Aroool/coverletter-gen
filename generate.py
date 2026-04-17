@@ -110,72 +110,135 @@ Find their background, what they've written or said publicly, their focus areas,
 help personalize the letter toward them specifically.
 """
 
-    system_prompt = """You are an expert cover letter writer. Your cover letters are:
-- Direct and confident, never sycophantic or generic
-- Deeply tailored to the specific company and role
-- Written to show the candidate deeply understands the company's actual problems
-- Under one page — tight, punchy paragraphs
-- Opening with something unexpected and specific (NOT "I am writing to apply for...")
+    system_prompt = """You are a world-class cover letter writer — part strategist, part copywriter.
+You have read thousands of cover letters and you know exactly why most of them fail:
+they are generic, self-focused, and written to impress rather than to connect.
 
-You will be given a candidate's full profile, a job description, and research context.
-You must return a JSON object with the cover letter content. Nothing else — pure JSON."""
+Your letters do the opposite. They:
+- Open with a line that makes the hiring manager stop and actually read
+- Show the candidate understands the company's REAL problems — not the polished mission statement version
+- Use the candidate's actual work as proof, not claims
+- Sound like a sharp human wrote it at midnight after researching the company for 2 hours
+- Never beg, never flatter, never use corporate filler words
 
-    user_prompt = f"""Here is the candidate's profile:
+You will be given a candidate profile, a job description, and research you will conduct.
+You must return ONLY a valid JSON object — no explanation, no markdown, no preamble."""
 
+    user_prompt = f"""CANDIDATE PROFILE:
 {profile_text}
 
 ---
 
-Job Information:
+JOB TARGET:
 - Company: {company_name}
 - Role: {role_title}
-- Hiring Manager: {hiring_manager if hiring_manager else "Unknown"}
-- Extra context from candidate: {extra_context if extra_context else "None"}
+- Hiring Manager: {hiring_manager if hiring_manager else "Unknown — research and find if possible"}
+- Candidate's extra context: {extra_context if extra_context else "None provided"}
 
 ---
 
-{"JOB URL (fetch this): " + jd_input if is_url else "JOB DESCRIPTION:\n" + jd_input}
+{"JOB POSTING URL — fetch this first: " + jd_input if is_url else "JOB DESCRIPTION (provided directly):\n" + jd_input}
 
 ---
 
-Your task:
-1. {"Fetch the job description from the URL above." if is_url else "Use the job description provided above."}
-2. Search the web for recent information about {company_name}: their mission, culture, recent news, what they're building, any pain points they're known for, recent hires, funding, product launches.
-3. {hm_section if hiring_manager else "Search for the company's key leadership/hiring contacts if possible."}
-4. Analyze the JD: extract the top 3-5 skills required, the core responsibilities, and the biggest problem this role is solving.
-5. Map the candidate's experience and projects to those specific requirements.
+RESEARCH PHASE — do all of this before writing a single word:
 
-Then generate the cover letter content and return this exact JSON:
+1. {"Fetch and read the full job description from the URL above." if is_url else "Read the job description carefully."}
+
+2. Search for {company_name} and find:
+   - What they actually do (not the PR version — the real product/service)
+   - Their current stage (early startup? scaling? enterprise?)
+   - Any recent news: funding rounds, product launches, pivots, layoffs, expansions
+   - Their tech stack or operational model if visible
+   - What kind of people they hire and what they value
+   - Any pain points, challenges, or bold bets they are making
+   - What they are proud of (check their blog, LinkedIn, press)
+
+3. {"Search for '" + hiring_manager + "' at " + company_name + " — find their LinkedIn, any talks or articles they have written, their professional background, what they care about, their tone. Use this to write toward THEM specifically." if hiring_manager else "Search for the company's key decision-makers, engineering/product leadership, or whoever likely reviews this role. Note what you find."}
+
+4. From the JD, extract:
+   - The 3-5 non-negotiable skills or experiences they are looking for
+   - The core problem this role is hired to solve (not the job title — the actual problem)
+   - Any language or phrases the company repeats (signals their values)
+   - Green flags in the JD that suggest company culture
+
+5. Map the candidate's profile to the JD:
+   - Which of their projects or experiences directly addresses the core problem?
+   - What makes them a stronger fit than a generic candidate?
+   - Is there anything in their profile that is unexpectedly relevant?
+
+---
+
+WRITING RULES — internalize these before generating:
+
+OPENING HOOK (most important paragraph):
+- Must NOT start with: "I", "My name", "I am writing", "I am excited", "I am applying", "I have always", "I recently", "I came across"
+- Must NOT be a compliment to the company ("Your innovative approach...")
+- Start with an INSIGHT, OBSERVATION, or TENSION — something true about the industry, the problem, or the role that only someone who has thought deeply about it would say
+- It should make the reader think "okay, this person gets it" within the first sentence
+- It can reference something specific you found in your research — a recent launch, a stated challenge, a market reality
+- Length: 2-4 sentences max. Dense. Every word earns its place.
+
+BODY PARAGRAPHS:
+- Paragraph 2: Connect the candidate's MOST RELEVANT project or experience directly to the core problem this role solves. Name the project. Be specific about what they built, why, and what it did. Do not summarize their resume — show the thinking behind the work.
+- Paragraph 3: Zoom out — show you understand the company's broader context and how the candidate fits into it. This is where company research shines. Reference something real about {company_name}.
+- Paragraph 4 (OPTIONAL): Only include if there is a critical skill or dimension not covered yet. Otherwise leave empty.
+
+VALUE BULLETS (3-4 bullets):
+- Each bullet is a specific, concrete thing the candidate brings or would do
+- NOT vague: "strong communication skills" ❌
+- YES specific: "Migrate legacy intake workflow to LLM-assisted triage, reducing processing time" ✅
+- Under 15 words each
+- Should feel like a preview of day-1 contributions, not a list of personality traits
+
+CLOSING PARAGRAPH:
+- Forward-looking and confident — not desperate
+- Do NOT say "I look forward to hearing from you" or "Thank you for your consideration"
+- Show selectivity — hint that the candidate is choosing this company too, not just hoping to be chosen
+- 2-3 sentences max
+
+TONE THROUGHOUT:
+- Confident but not arrogant
+- Specific but not exhausting to read
+- Human — contractions are fine, short sentences are good
+- Zero buzzwords: no "leverage", "synergy", "passionate", "dynamic", "results-driven", "hardworking"
+- Zero filler: every sentence must add information or make a point
+
+WORD COUNT:
+- Total body text (opening + paragraphs + bullets + closing): 300–380 words
+- This fills exactly one page. Do not go under 300 or over 380.
+- Count carefully before finalizing.
+
+---
+
+OUTPUT — return this exact JSON and nothing else:
 
 {{
-  "hiring_manager_name": "Full name or 'Hiring Manager' if unknown",
+  "hiring_manager_name": "Full name if found, else 'Hiring Manager'",
   "hiring_manager_title": "Their title if found, else ''",
-  "company_research_summary": "2-3 sentences on what you found about the company (internal note, not in letter)",
-  "hm_research_summary": "What you found about the hiring manager (internal note, not in letter)",
-  "jd_key_skills": ["skill1", "skill2", "skill3"],
-  "jd_core_problem": "What problem is this role solving at the company",
-  "opening_hook": "First paragraph — unique, specific, NOT generic. Reference something real about the company or role. Should make the reader lean in.",
+  "company_research_summary": "3-4 sentences on what you found — key facts, recent news, culture signals. This is an internal note shown to the candidate, not included in the letter.",
+  "hm_research_summary": "What you found about the hiring manager — background, focus, tone. Internal note only.",
+  "jd_key_skills": ["top skill 1", "top skill 2", "top skill 3", "top skill 4"],
+  "jd_core_problem": "One sentence: the real problem this role is hired to solve",
+  "opening_hook": "The first paragraph. Starts with an insight or tension, not 'I'. Specific to this company and role. 2-4 sentences.",
   "body_paragraphs": [
-    "Second paragraph — connect candidate's most relevant experience/project directly to the role",
-    "Third paragraph — show you understand their specific operational/business context and how you'd contribute",
-    "Fourth paragraph — optional, only if needed to cover a critical skill or add a strong point. Leave empty string if not needed."
+    "Paragraph 2 — candidate's most relevant work connected to the core problem. Specific, named, real.",
+    "Paragraph 3 — broader company context + candidate fit. References something real about {company_name}.",
+    ""
   ],
   "value_bullets": [
-    "Specific thing you'd do / bring (max 4, each under 12 words)",
-    "...",
-    "...",
-    "..."
+    "Specific, concrete contribution #1",
+    "Specific, concrete contribution #2",
+    "Specific, concrete contribution #3",
+    "Specific, concrete contribution #4"
   ],
-  "closing_paragraph": "Final paragraph — forward-looking, confident, not begging. Show you're selective too.",
-  "sign_off": "Sincerely"
+  "closing_paragraph": "2-3 sentences. Confident, forward-looking, slightly selective. No 'look forward to hearing from you'.",
+  "sign_off": "Sincerely",
+  "word_count": 0
 }}
 
-Rules:
-- Opening hook must NOT start with "I am writing", "I am excited", "I am reaching out", or any generic opener
-- Every paragraph must feel like it was written specifically for THIS company and THIS role
-- Reference the candidate's real projects and achievements by name where relevant
-- Keep total length to fit ONE page comfortably (3-4 short paragraphs + bullets)
-- Be bold and direct — hiring managers read 100 generic letters a day
+After drafting, count the words in: opening_hook + all body_paragraphs + all value_bullets + closing_paragraph.
+Set "word_count" to that number. If it is outside 300-380, revise until it fits, then return the final JSON.
 """
 
     console.print("[dim]  → Fetching JD and researching company...[/dim]")
@@ -214,11 +277,24 @@ Rules:
 
     # Log research findings
     if result.get("company_research_summary"):
-        console.print(f"[dim]  ✓ Company: {result['company_research_summary'][:80]}...[/dim]")
-    if result.get("hm_research_summary"):
-        console.print(f"[dim]  ✓ Hiring Manager: {result['hm_research_summary'][:80]}...[/dim]")
+        console.print(f"[dim]  ✓ Company: {result['company_research_summary'][:100]}...[/dim]")
+    if result.get("hm_research_summary") and result["hm_research_summary"].strip():
+        console.print(f"[dim]  ✓ Hiring Manager: {result['hm_research_summary'][:100]}...[/dim]")
     if result.get("jd_core_problem"):
-        console.print(f"[dim]  ✓ Role problem: {result['jd_core_problem'][:80]}...[/dim]")
+        console.print(f"[dim]  ✓ Core problem: {result['jd_core_problem'][:100]}[/dim]")
+
+    # Count and display word count
+    body_text = " ".join(filter(None, [
+        result.get("opening_hook", ""),
+        *result.get("body_paragraphs", []),
+        *result.get("value_bullets", []),
+        result.get("closing_paragraph", ""),
+    ]))
+    actual_word_count = len(body_text.split())
+    result["word_count"] = actual_word_count
+
+    color = "green" if 300 <= actual_word_count <= 380 else "yellow" if actual_word_count < 300 else "red"
+    console.print(f"  [{color}]Word count: {actual_word_count} words[/{color}] [dim](target: 300–380)[/dim]")
 
     return result
 
