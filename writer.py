@@ -243,16 +243,15 @@ def build_docx(
 ):
     doc = Document()
 
-    # ── Page setup: US Letter, 0.5" margins ───────────────────────────────────
+    # ── Page setup: US Letter (8.5 x 11in), 0.5" margins ────────────────────
     section = doc.sections[0]
-    section.page_width = Emu(12240 * 914)    # 8.5in in EMU
-    section.page_height = Emu(15840 * 914)   # 11in in EMU
-    # 0.5 inch = 720 DXA = 457200 EMU
+    section.page_width  = Inches(8.5)   # 7,772,400 EMU
+    section.page_height = Inches(11)    # 10,058,400 EMU
     half_inch = Inches(0.5)
-    section.top_margin = half_inch
+    section.top_margin    = half_inch
     section.bottom_margin = half_inch
-    section.left_margin = half_inch
-    section.right_margin = half_inch
+    section.left_margin   = half_inch
+    section.right_margin  = half_inch
 
     # Remove default paragraph spacing from Normal style
     normal_style = doc.styles["Normal"]
@@ -347,6 +346,7 @@ def build_docx(
 
     # ── Opening hook ─────────────────────────────────────────────────────────
     opening_para = doc.add_paragraph()
+    opening_para.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     set_paragraph_spacing(opening_para)
     opening_run = opening_para.add_run(content.get("opening_hook", ""))
     set_font(opening_run, size_pt=11)
@@ -356,6 +356,7 @@ def build_docx(
         if not body_text or not body_text.strip():
             continue
         body_para = doc.add_paragraph()
+        body_para.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
         set_paragraph_spacing(body_para)
 
         # Handle inline project references — find bold segments (project names)
@@ -386,6 +387,7 @@ def build_docx(
     closing_text = content.get("closing_paragraph", "")
     if closing_text:
         closing_para = doc.add_paragraph()
+        closing_para.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
         set_paragraph_spacing(closing_para)
         closing_run = closing_para.add_run(closing_text)
         set_font(closing_run, size_pt=11)
