@@ -1,12 +1,12 @@
 # Cover Letter Generator
 
-AI-powered cover letter generator that researches companies, understands job descriptions, and writes personalized letters — output as a ready-to-submit `.docx`.
+AI-powered cover letter generator that runs as a **Claude Code slash command** — no API key needed, uses your Claude subscription.
 
 ## What it does
 
 - Researches the company (recent news, culture, pain points) via web search
 - Looks up the hiring manager if provided
-- Analyzes the job description — extracts key skills and the core problem the role solves
+- Analyzes the JD — extracts key skills and the core problem the role solves
 - Maps your profile against the requirements
 - Writes a unique, non-generic cover letter in your exact format
 - Outputs a `.docx` ready to submit or edit
@@ -14,39 +14,48 @@ AI-powered cover letter generator that researches companies, understands job des
 ## Setup
 
 ```bash
-# Install dependencies
-pip install anthropic python-docx rich pyyaml
+# Install the one dependency needed for .docx output
+pip install python-docx pyyaml
 
-# Set your Anthropic API key
-export ANTHROPIC_API_KEY=your_key_here
-
-# Run
-python3 main.py
+# Open Claude Code in this folder
+cd ~/Desktop/coverletter-gen
+claude
 ```
 
 ## Usage
 
-**First run** — walks you through a one-time profile setup (name, skills, experience, projects, achievements).
+Inside Claude Code, type:
+```
+/cover-letter
+```
+
+**First run** — Claude walks you through a one-time profile setup.
 
 **Every run after:**
-1. Paste a job URL or the full job description
-2. Enter the company name and role title
-3. Optionally add the hiring manager's name
-4. Get a `[Company]_[Role]_CoverLetter.docx` in the `output/` folder
+1. Paste a job URL or JD text (type `DONE` when finished pasting)
+2. Claude auto-detects company, role, hiring manager from the JD
+3. Confirm or correct in one line
+4. Claude researches + generates → outputs `output/[Company]_[Role]_CoverLetter.docx`
+
+## Works with
+
+- ✅ Public job boards (Greenhouse, Lever, Indeed) — paste URL
+- ✅ Login-required platforms (Handshake, LinkedIn, Workday) — paste JD text
 
 ## Project structure
 
 ```
-main.py      — CLI entry point
-setup.py     — Structured profile onboarding
-generate.py  — Claude + web research + letter generation
-writer.py    — Builds the .docx in the correct format
-output/      — Generated cover letters (gitignored)
-profile.yaml — Your saved profile (gitignored)
+.claude/
+  commands/
+    cover-letter.md   — slash command instructions
+writer.py             — .docx builder (Times New Roman, page border, exact template)
+writer_cli.py         — CLI wrapper called by the slash command
+setup.py              — profile onboarding helper
+profile.yaml          — your saved profile (gitignored)
+output/               — generated cover letters (gitignored)
 ```
 
 ## Powered by
 
-- [Claude](https://anthropic.com) (claude-opus-4-6) with web search
+- Claude Code (your subscription — no API key needed)
 - `python-docx` for Word output
-- `rich` for CLI formatting
