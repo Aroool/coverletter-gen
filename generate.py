@@ -296,12 +296,25 @@ Set "word_count" to that number. If it is outside 300-380, revise until it fits,
 
     console.print("[dim]  → Parsing response...[/dim]")
 
-    # Extract JSON from response
-    json_match = re.search(r'\{[\s\S]*\}', raw_text)
-    if not json_match:
-        raise ValueError(f"Could not extract JSON from Claude response.\n\nRaw response:\n{raw_text[:500]}")
+    # Robust JSON extraction — find the outermost { } block
+    result = None
+    start = raw_text.find('{')
+    if start != -1:
+        depth = 0
+        for i, ch in enumerate(raw_text[start:], start):
+            if ch == '{':
+                depth += 1
+            elif ch == '}':
+                depth -= 1
+                if depth == 0:
+                    try:
+                        result = json.loads(raw_text[start:i+1])
+                    except json.JSONDecodeError:
+                        pass
+                    break
 
-    result = json.loads(json_match.group())
+    if result is None:
+        raise ValueError(f"Could not extract valid JSON from Claude response.\n\nRaw:\n{raw_text[:600]}")
 
     # Log research findings
     if result.get("company_research_summary"):
