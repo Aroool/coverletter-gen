@@ -62,33 +62,53 @@ def collect_multiline(console: Console, prompt_text: str) -> str:
 def collect_jd(console: Console) -> str:
     """
     Smart JD collector:
-    - If user pastes a public URL → return it as-is (Claude will fetch it)
-    - If user pastes a gated URL → warn them and collect JD via safe multi-line input
-    - If user types raw text on one line → return it as-is
+    - If user pastes a public URL  → fetch via web search
+    - If user pastes a gated URL   → ask them to paste JD text
+    - If user pastes raw JD text   → auto-detects and collects full multi-line paste
     """
     console.print("[bold]Job Details[/bold]")
-    console.print("[dim]Paste a job URL, or type the JD directly.[/dim]\n")
+    console.print("[dim]Options:[/dim]")
+    console.print("[dim]  • Paste a job URL (public boards like Greenhouse, Lever, Indeed)[/dim]")
+    console.print("[dim]  • Paste JD text directly (for Handshake, LinkedIn, Workday)[/dim]")
+    console.print("[dim]  → In both cases: paste, then type DONE on a new line and press Enter[/dim]\n")
 
-    jd_input = Prompt.ask("Job URL or JD").strip()
+    first_line = Prompt.ask("Job URL or first line of JD").strip()
 
-    if jd_input.startswith("http"):
-        gated = detect_gated_url(jd_input)
-        if gated:
-            console.print(f"\n[yellow]⚠  {gated} requires login — the AI can't fetch that URL.[/yellow]")
-            console.print("[dim]Copy the job description text from the page and paste it below.[/dim]")
-            console.print("[dim]Tip: On the Handshake page, select all the JD text, copy (Cmd+C), then paste here.[/dim]")
+    # ── URL path ──────────────────────────────────────────────────────────────
+    if first_line.startswith("http"):
+        gated = detect_gated_url(first_line)
+        if not gated:
+            # Public URL — Claude will fetch it
+            console.print(f"[green]✓ URL captured — will fetch during generation.[/green]\n")
+            return first_line
+        else:
+            # Gated URL — need JD text
+            console.print(f"\n[yellow]⚠  {gated} requires login — can't fetch automatically.[/yellow]")
+            console.print("[dim]Go back to the job page, copy all the JD text (Cmd+A → Cmd+C), paste below.[/dim]")
+            jd_input = collect_multiline(console, "Paste the full job description:")
+    else:
+        # ── Raw JD text path ──────────────────────────────────────────────────
+        # First line already captured — collect the rest
+        console.print("[dim]Got it — keep pasting, then type DONE on a new line and press Enter:[/dim]")
+        remaining_lines = []
+        while True:
+            try:
+                line = input()
+            except EOFError:
+                break
+            if line.strip().upper() == "DONE":
+                break
+            remaining_lines.append(line)
 
-            jd_input = collect_multiline(
-                console,
-                "Paste the full job description below:"
-            )
+        jd_input = first_line
+        if remaining_lines:
+            jd_input = first_line + "\n" + "\n".join(remaining_lines)
 
-            if not jd_input.strip():
-                console.print("[red]No JD text entered. Exiting.[/red]")
-                sys.exit(1)
+    if not jd_input.strip():
+        console.print("[red]No JD text entered. Exiting.[/red]")
+        sys.exit(1)
 
-            console.print(f"\n[green]✓ Captured {len(jd_input.split())} words of JD.[/green]\n")
-
+    console.print(f"\n[green]✓ Captured {len(jd_input.split())} words of JD.[/green]\n")
     return jd_input
 
 BASE_DIR = Path(__file__).parent
