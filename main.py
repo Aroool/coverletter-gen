@@ -13,6 +13,66 @@ from rich.panel import Panel
 from rich.prompt import Prompt, Confirm
 from rich import print as rprint
 
+# Platforms that require login — can't be fetched by web search
+GATED_PLATFORMS = {
+    "app.joinhandshake.com": "Handshake",
+    "handshake.com": "Handshake",
+    "linkedin.com/jobs": "LinkedIn Jobs",
+    "workday.com": "Workday",
+    "myworkdayjobs.com": "Workday",
+    "wd1.myworkdayjobs.com": "Workday",
+    "wd3.myworkdayjobs.com": "Workday",
+    "boards.greenhouse.io": None,   # usually public — allow
+    "jobs.lever.co": None,          # usually public — allow
+    "indeed.com": None,             # usually public — allow
+}
+
+
+def detect_gated_url(url: str) -> str | None:
+    """Return platform name if URL is login-protected, else None."""
+    url_lower = url.lower()
+    for domain, platform_name in GATED_PLATFORMS.items():
+        if domain in url_lower and platform_name is not None:
+            return platform_name
+    return None
+
+
+def collect_jd(console: Console) -> str:
+    """
+    Smart JD collector:
+    - If user pastes a public URL → return it as-is (Claude will fetch it)
+    - If user pastes a gated URL → warn them and prompt to paste JD text
+    - If user pastes raw text → return it as-is
+    """
+    console.print("[bold]Job Details[/bold]")
+    console.print("[dim]Paste a job URL or the full job description text.[/dim]\n")
+
+    jd_input = Prompt.ask("Job URL or paste JD").strip()
+
+    if jd_input.startswith("http"):
+        gated = detect_gated_url(jd_input)
+        if gated:
+            console.print(f"\n[yellow]⚠  {gated} requires login — the AI can't fetch that URL directly.[/yellow]")
+            console.print("[dim]No worries! Just copy the job description from the page and paste it below.[/dim]")
+            console.print("[dim]Tip: Select all text on the job page (Cmd+A), copy, paste here. Or just the key sections.[/dim]\n")
+
+            lines = []
+            console.print("[dim]Paste JD text below. Press Enter on an empty line when done:[/dim]")
+            while True:
+                line = input()
+                if line == "" and lines:
+                    break
+                lines.append(line)
+            jd_input = "\n".join(lines)
+
+            if not jd_input.strip():
+                console.print("[red]No JD text entered. Exiting.[/red]")
+                sys.exit(1)
+
+            console.print(f"[green]Got it — {len(jd_input.split())} words of JD captured.[/green]\n")
+
+    return jd_input
+
 BASE_DIR = Path(__file__).parent
 PROFILE_FILE = BASE_DIR / "profile.yaml"
 OUTPUT_DIR = BASE_DIR / "output"
@@ -45,10 +105,7 @@ def main():
             console.print("\n[green]Profile updated.[/green]\n")
 
     # Collect job info
-    console.print("[bold]Job Details[/bold]")
-    console.print("[dim]Paste a job URL or the full job description. Press Enter twice when done.[/dim]\n")
-
-    jd_input = Prompt.ask("Job URL or paste JD (URL preferred)")
+    jd_input = collect_jd(console)
 
     company_name = Prompt.ask("Company name")
     role_title = Prompt.ask("Role / Job title")
