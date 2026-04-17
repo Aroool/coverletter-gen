@@ -142,20 +142,43 @@ def main():
             run_setup(PROFILE_FILE, editing=True)
             console.print("\n[green]Profile updated.[/green]\n")
 
-    # Collect job info
+    # Collect JD
     jd_input = collect_jd(console)
 
-    company_name = Prompt.ask("Company name")
-    role_title = Prompt.ask("Role / Job title")
-    hiring_manager = Prompt.ask("Hiring manager name [dim](press Enter to skip)[/dim]", default="")
-    extra_context = Prompt.ask(
-        "Any extra context? [dim](e.g. referral, something you know about the company)[/dim]",
-        default=""
-    )
+    # Auto-extract company, role, hiring manager from JD
+    import os
+    import anthropic as _anthropic
+    from generate import extract_jd_metadata, generate_cover_letter
+
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        console.print("[red]ANTHROPIC_API_KEY not set. Run: export ANTHROPIC_API_KEY=your_key[/red]")
+        sys.exit(1)
+
+    _client = _anthropic.Anthropic(api_key=api_key)
+
+    if not jd_input.startswith("http"):
+        console.print("[dim]  → Reading JD...[/dim]")
+        meta = extract_jd_metadata(_client, jd_input)
+    else:
+        meta = {"company_name": "", "role_title": "", "hiring_manager": ""}
+
+    company_name  = meta.get("company_name", "")
+    role_title    = meta.get("role_title", "")
+    hiring_manager = meta.get("hiring_manager", "")
+
+    # Show what was detected — let user correct inline if wrong
+    console.print(f"\n[bold]Detected from JD:[/bold]")
+    console.print(f"  Company  : [cyan]{company_name or '(not found)'}[/cyan]")
+    console.print(f"  Role     : [cyan]{role_title or '(not found)'}[/cyan]")
+    console.print(f"  HM       : [cyan]{hiring_manager or '(not found)'}[/cyan]")
+    console.print("[dim]Press Enter to confirm each, or type a correction:[/dim]\n")
+
+    company_name   = Prompt.ask("  Company",        default=company_name)
+    role_title     = Prompt.ask("  Role",           default=role_title)
+    hiring_manager = Prompt.ask("  Hiring manager", default=hiring_manager)
 
     console.print("\n[cyan]Researching company, analyzing JD, and crafting your letter...[/cyan]\n")
-
-    from generate import generate_cover_letter
 
     result = generate_cover_letter(
         profile_path=PROFILE_FILE,
@@ -163,7 +186,7 @@ def main():
         company_name=company_name,
         role_title=role_title,
         hiring_manager=hiring_manager,
-        extra_context=extra_context,
+        extra_context="",
         output_dir=OUTPUT_DIR,
         console=console,
     )

@@ -19,6 +19,34 @@ import anthropic
 console_default = Console()
 
 
+def extract_jd_metadata(client: anthropic.Anthropic, jd_text: str) -> dict:
+    """
+    Quickly extract company name, role title, and hiring manager
+    from raw JD text using a fast, cheap Claude call.
+    """
+    response = client.messages.create(
+        model="claude-haiku-4-5",
+        max_tokens=256,
+        messages=[{
+            "role": "user",
+            "content": f"""Extract the following from this job description and return ONLY valid JSON:
+{{
+  "company_name": "company name (string)",
+  "role_title": "exact job title (string)",
+  "hiring_manager": "hiring manager full name if explicitly mentioned, else empty string"
+}}
+
+Job description:
+{jd_text[:3000]}"""
+        }]
+    )
+    raw = response.content[0].text.strip()
+    match = re.search(r'\{[\s\S]*\}', raw)
+    if match:
+        return json.loads(match.group())
+    return {"company_name": "", "role_title": "", "hiring_manager": ""}
+
+
 def load_profile(profile_path: Path) -> dict:
     with open(profile_path) as f:
         return yaml.safe_load(f)
