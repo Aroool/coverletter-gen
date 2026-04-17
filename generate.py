@@ -233,7 +233,9 @@ TONE THROUGHOUT:
 - Zero filler: every sentence must add information or make a point
 
 WORD COUNT:
-- Total body text (opening + paragraphs + bullets + closing): 300–380 words
+- Total body text (opening + paragraphs + bullets + closing): 380–400 words
+- This is the sweet spot: full, substantive, and still fits one page with 0.5" margins
+- Do NOT go under 380 — the letter will feel thin. Do NOT go over 400 — it will spill to page 2.
 - This fills exactly one page. Do not go under 300 or over 380.
 - Count carefully before finalizing.
 
@@ -266,7 +268,7 @@ OUTPUT — return this exact JSON and nothing else:
 }}
 
 After drafting, count the words in: opening_hook + all body_paragraphs + all value_bullets + closing_paragraph.
-Set "word_count" to that number. If it is outside 300-380, revise until it fits, then return the final JSON.
+Set "word_count" to that number. If it is outside 380-400, revise until it fits, then return the final JSON.
 """
 
     console.print("[dim]  → Fetching JD and researching company...[/dim]")
@@ -334,8 +336,8 @@ Set "word_count" to that number. If it is outside 300-380, revise until it fits,
     actual_word_count = len(body_text.split())
     result["word_count"] = actual_word_count
 
-    color = "green" if 300 <= actual_word_count <= 380 else "yellow" if actual_word_count < 300 else "red"
-    console.print(f"  [{color}]Word count: {actual_word_count} words[/{color}] [dim](target: 300–380)[/dim]")
+    color = "green" if 380 <= actual_word_count <= 400 else "yellow" if actual_word_count < 380 else "red"
+    console.print(f"  [{color}]Word count: {actual_word_count} words[/{color}] [dim](target: 380–400)[/dim]")
 
     return result
 
