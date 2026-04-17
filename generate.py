@@ -138,19 +138,14 @@ Find their background, what they've written or said publicly, their focus areas,
 help personalize the letter toward them specifically.
 """
 
-    system_prompt = """You are a world-class cover letter writer — part strategist, part copywriter.
-You have read thousands of cover letters and you know exactly why most of them fail:
-they are generic, self-focused, and written to impress rather than to connect.
+    system_prompt = """You are an expert cover letter writer. Your letters:
+- Open with an insight or tension — never "I am writing to apply"
+- Show the candidate understands the company's REAL problems, not just the job title
+- Use specific project names and achievements as proof, not vague claims
+- Are confident, direct, zero corporate filler (no "leverage", "synergy", "passionate")
+- Fit exactly one page — 380–400 words in the body
 
-Your letters do the opposite. They:
-- Open with a line that makes the hiring manager stop and actually read
-- Show the candidate understands the company's REAL problems — not the polished mission statement version
-- Use the candidate's actual work as proof, not claims
-- Sound like a sharp human wrote it at midnight after researching the company for 2 hours
-- Never beg, never flatter, never use corporate filler words
-
-You will be given a candidate profile, a job description, and research you will conduct.
-You must return ONLY a valid JSON object — no explanation, no markdown, no preamble."""
+Return ONLY valid JSON — no markdown, no explanation, no text outside the JSON."""
 
     user_prompt = f"""CANDIDATE PROFILE:
 {profile_text}
@@ -197,45 +192,23 @@ RESEARCH PHASE — do all of this before writing a single word:
 
 ---
 
-WRITING RULES — internalize these before generating:
+WRITING RULES:
 
-OPENING HOOK (most important paragraph):
-- Must NOT start with: "I", "My name", "I am writing", "I am excited", "I am applying", "I have always", "I recently", "I came across"
-- Must NOT be a compliment to the company ("Your innovative approach...")
-- Start with an INSIGHT, OBSERVATION, or TENSION — something true about the industry, the problem, or the role that only someone who has thought deeply about it would say
-- It should make the reader think "okay, this person gets it" within the first sentence
-- It can reference something specific you found in your research — a recent launch, a stated challenge, a market reality
-- Length: 2-4 sentences max. Dense. Every word earns its place.
+OPENING: Start with an insight or tension about the industry/role/company — not "I". Make the reader lean in within the first sentence. 2-4 sentences, dense.
 
-BODY PARAGRAPHS:
-- Paragraph 2: Connect the candidate's MOST RELEVANT project or experience directly to the core problem this role solves. Name the project. Be specific about what they built, why, and what it did. Do not summarize their resume — show the thinking behind the work.
-- Paragraph 3: Zoom out — show you understand the company's broader context and how the candidate fits into it. This is where company research shines. Reference something real about {company_name}.
-- Paragraph 4 (OPTIONAL): Only include if there is a critical skill or dimension not covered yet. Otherwise leave empty.
+BODY P2: Candidate's most relevant project/experience tied directly to the core problem. Name it. Show the thinking, not just the outcome.
 
-VALUE BULLETS (3-4 bullets):
-- Each bullet is a specific, concrete thing the candidate brings or would do
-- NOT vague: "strong communication skills" ❌
-- YES specific: "Migrate legacy intake workflow to LLM-assisted triage, reducing processing time" ✅
-- Under 15 words each
-- Should feel like a preview of day-1 contributions, not a list of personality traits
+BODY P3: Company context — reference something real from your research. Show you understand their specific situation, not just the job title.
 
-CLOSING PARAGRAPH:
-- Forward-looking and confident — not desperate
-- Do NOT say "I look forward to hearing from you" or "Thank you for your consideration"
-- Show selectivity — hint that the candidate is choosing this company too, not just hoping to be chosen
-- 2-3 sentences max
+BODY P4: Only if a critical skill isn't covered yet — otherwise leave empty string.
 
-TONE THROUGHOUT:
-- Confident but not arrogant
-- Specific but not exhausting to read
-- Human — contractions are fine, short sentences are good
-- Zero buzzwords: no "leverage", "synergy", "passionate", "dynamic", "results-driven", "hardworking"
-- Zero filler: every sentence must add information or make a point
+BULLETS (3-4): Specific day-1 contributions. NOT "strong communicator" — YES "Build Angular components that surface compliance findings by severity". Under 15 words each.
 
-WORD COUNT:
-- Total body text (opening + paragraphs + bullets + closing): 380–400 words
-- This is the sweet spot: full, substantive, and still fits one page with 0.5" margins
-- Do NOT go under 380 — the letter will feel thin. Do NOT go over 400 — it will spill to page 2.
+CLOSING: Confident, forward-looking. No "I look forward to hearing from you". Show you're choosing them too.
+
+BANNED WORDS: leverage, synergy, passionate, dynamic, results-driven, hardworking, excited, thrilled.
+
+WORD COUNT: 380–400 words total (opening + paragraphs + bullets + closing). Count before returning. Revise if outside range.
 - This fills exactly one page. Do not go under 300 or over 380.
 - Count carefully before finalizing.
 
@@ -279,10 +252,10 @@ Set "word_count" to that number. If it is outside 380-400, revise until it fits,
     output_tokens = 0
 
     with client.messages.stream(
-        model="claude-opus-4-6",
-        max_tokens=4096,
+        model="claude-sonnet-4-5",
+        max_tokens=2048,
         system=system_prompt,
-        tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 8}],
+        tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 5}],
         messages=[{"role": "user", "content": user_prompt}],
     ) as stream:
         for event in stream:
