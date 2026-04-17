@@ -37,39 +37,57 @@ def detect_gated_url(url: str) -> str | None:
     return None
 
 
+def collect_multiline(console: Console, prompt_text: str) -> str:
+    """
+    Reliable multi-line input for terminal paste.
+    User pastes text, then types DONE on a new line and hits Enter.
+    This avoids zsh interpreting pasted lines as shell commands.
+    """
+    console.print(f"\n[dim]{prompt_text}[/dim]")
+    console.print("[bold yellow]When finished, type DONE on a new line and press Enter:[/bold yellow]\n")
+
+    lines = []
+    while True:
+        try:
+            line = input()
+        except EOFError:
+            break
+        if line.strip().upper() == "DONE":
+            break
+        lines.append(line)
+
+    return "\n".join(lines)
+
+
 def collect_jd(console: Console) -> str:
     """
     Smart JD collector:
     - If user pastes a public URL → return it as-is (Claude will fetch it)
-    - If user pastes a gated URL → warn them and prompt to paste JD text
-    - If user pastes raw text → return it as-is
+    - If user pastes a gated URL → warn them and collect JD via safe multi-line input
+    - If user types raw text on one line → return it as-is
     """
     console.print("[bold]Job Details[/bold]")
-    console.print("[dim]Paste a job URL or the full job description text.[/dim]\n")
+    console.print("[dim]Paste a job URL, or type the JD directly.[/dim]\n")
 
-    jd_input = Prompt.ask("Job URL or paste JD").strip()
+    jd_input = Prompt.ask("Job URL or JD").strip()
 
     if jd_input.startswith("http"):
         gated = detect_gated_url(jd_input)
         if gated:
-            console.print(f"\n[yellow]⚠  {gated} requires login — the AI can't fetch that URL directly.[/yellow]")
-            console.print("[dim]No worries! Just copy the job description from the page and paste it below.[/dim]")
-            console.print("[dim]Tip: Select all text on the job page (Cmd+A), copy, paste here. Or just the key sections.[/dim]\n")
+            console.print(f"\n[yellow]⚠  {gated} requires login — the AI can't fetch that URL.[/yellow]")
+            console.print("[dim]Copy the job description text from the page and paste it below.[/dim]")
+            console.print("[dim]Tip: On the Handshake page, select all the JD text, copy (Cmd+C), then paste here.[/dim]")
 
-            lines = []
-            console.print("[dim]Paste JD text below. Press Enter on an empty line when done:[/dim]")
-            while True:
-                line = input()
-                if line == "" and lines:
-                    break
-                lines.append(line)
-            jd_input = "\n".join(lines)
+            jd_input = collect_multiline(
+                console,
+                "Paste the full job description below:"
+            )
 
             if not jd_input.strip():
                 console.print("[red]No JD text entered. Exiting.[/red]")
                 sys.exit(1)
 
-            console.print(f"[green]Got it — {len(jd_input.split())} words of JD captured.[/green]\n")
+            console.print(f"\n[green]✓ Captured {len(jd_input.split())} words of JD.[/green]\n")
 
     return jd_input
 
